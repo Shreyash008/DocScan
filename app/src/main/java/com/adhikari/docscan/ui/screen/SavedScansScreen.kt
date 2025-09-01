@@ -1,9 +1,14 @@
 package com.adhikari.docscan.ui.screen
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +22,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -33,7 +42,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +56,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,6 +88,7 @@ fun SavedScansScreen(
     var isLoading by remember { mutableStateOf(true) }
     var pdfToDelete by remember { mutableStateOf<PdfFile?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isGalleryView by remember { mutableStateOf(false) }
     
     // Load saved PDFs when screen is created
     LaunchedEffect(Unit) {
@@ -100,6 +113,16 @@ fun SavedScansScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(
+                        onClick = { isGalleryView = !isGalleryView }
+                    ) {
+                        Icon(
+                            painter = if (isGalleryView) painterResource(R.drawable.grid_off) else painterResource(R.drawable.grid_on),
+                            contentDescription = if (isGalleryView) "Switch to List View" else "Switch to Gallery View"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -121,20 +144,37 @@ fun SavedScansScreen(
         } else if (savedPdfs.isEmpty()) {
             EmptyState(paddingValues = paddingValues)
         } else {
-            SavedPdfsList(
-                pdfs = savedPdfs,
-                paddingValues = paddingValues,
-                onPdfDeleted = { pdf ->
-                    pdfToDelete = pdf
-                    showDeleteDialog = true
-                },
-                onPdfShared = { pdf ->
-                    sharePdf(context, pdf)
-                },
-                onPdfViewed = { pdf ->
-                    openPdf(context, pdf)
-                }
-            )
+            if (isGalleryView) {
+                SavedPdfsGallery(
+                    pdfs = savedPdfs,
+                    paddingValues = paddingValues,
+                    onPdfDeleted = { pdf ->
+                        pdfToDelete = pdf
+                        showDeleteDialog = true
+                    },
+                    onPdfShared = { pdf ->
+                        sharePdf(context, pdf)
+                    },
+                    onPdfViewed = { pdf ->
+                        openPdf(context, pdf)
+                    }
+                )
+            } else {
+                SavedPdfsList(
+                    pdfs = savedPdfs,
+                    paddingValues = paddingValues,
+                    onPdfDeleted = { pdf ->
+                        pdfToDelete = pdf
+                        showDeleteDialog = true
+                    },
+                    onPdfShared = { pdf ->
+                        sharePdf(context, pdf)
+                    },
+                    onPdfViewed = { pdf ->
+                        openPdf(context, pdf)
+                    }
+                )
+            }
         }
         
         // Delete confirmation dialog
@@ -234,6 +274,43 @@ private fun SavedPdfsList(
 }
 
 @Composable
+private fun SavedPdfsGallery(
+    pdfs: List<PdfFile>,
+    paddingValues: PaddingValues,
+    onPdfDeleted: (PdfFile) -> Unit,
+    onPdfShared: (PdfFile) -> Unit,
+    onPdfViewed: (PdfFile) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 160.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(
+                text = "Saved Documents (${pdfs.size})",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        
+        items(pdfs) { pdf ->
+            PdfGalleryCard(
+                pdf = pdf,
+                onDelete = { onPdfDeleted(pdf) },
+                onShare = { onPdfShared(pdf) },
+                onView = { onPdfViewed(pdf) }
+            )
+        }
+    }
+}
+
+@Composable
 private fun PdfCard(
     pdf: PdfFile,
     onDelete: () -> Unit,
@@ -321,6 +398,141 @@ private fun PdfCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PdfGalleryCard(
+    pdf: PdfFile,
+    onDelete: () -> Unit,
+    onShare: () -> Unit,
+    onView: () -> Unit
+) {
+    var thumbnail by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoadingThumbnail by remember { mutableStateOf(true) }
+    var enableMarquee by remember { mutableStateOf(false) }
+
+    // Load PDF thumbnail
+    LaunchedEffect(pdf.path) {
+        thumbnail = generatePdfThumbnail(pdf.path)
+        isLoadingThumbnail = false
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column {
+            // Thumbnail with overlayed actions
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .combinedClickable { onView() },
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    isLoadingThumbnail -> CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    thumbnail != null -> Image(
+                        bitmap = thumbnail!!.asImageBitmap(),
+                        contentDescription = "PDF thumbnail",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    else -> Icon(
+                        painter = painterResource(R.drawable.info),
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Overlay actions container
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SmallOverlayButton(icon = R.drawable.visibility, onClick = onView)
+                    SmallOverlayButton(icon = R.drawable.share, onClick = onShare)
+                    SmallOverlayButton(
+                        icon = R.drawable.delete,
+                        onClick = onDelete,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            // File info
+            Column(
+                modifier = Modifier.padding(10.dp)
+            ) {
+                if (enableMarquee) {
+                    // Marquee effect once
+                    LaunchedEffect(Unit) {
+                        delay(5000) // stop after 5s
+                        enableMarquee = false
+                    }
+                }
+
+                Text(
+                    text = pdf.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = if (enableMarquee) Int.MAX_VALUE else 1,
+                    overflow = if (enableMarquee) TextOverflow.Visible else TextOverflow.Ellipsis,
+                    modifier = if (enableMarquee) {
+                        Modifier.basicMarquee()
+                    } else Modifier
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = formatFileSize(pdf.size),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SmallOverlayButton(
+    icon: Int,
+    onClick: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.onSurface
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(32.dp) // slightly bigger
+            .clip(RoundedCornerShape(50))
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(25.dp)
+        )
+    }
+}
 
 
 
@@ -462,6 +674,40 @@ private fun openPdf(context: android.content.Context, pdf: PdfFile) {
         }
     } catch (e: Exception) {
         Toast.makeText(context, "No PDF viewer app found", Toast.LENGTH_SHORT).show()
+    }
+}
+
+// Generate PDF thumbnail from first page
+private fun generatePdfThumbnail(pdfPath: String): Bitmap? {
+    return try {
+        val file = File(pdfPath)
+        if (!file.exists()) return null
+        
+        val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val pdfRenderer = PdfRenderer(fileDescriptor)
+        
+        if (pdfRenderer.pageCount > 0) {
+            val page = pdfRenderer.openPage(0)
+            val bitmap = Bitmap.createBitmap(
+                page.width * 2, // Scale up for better quality
+                page.height * 2,
+                Bitmap.Config.ARGB_8888
+            )
+            
+            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            page.close()
+            pdfRenderer.close()
+            fileDescriptor.close()
+            
+            bitmap
+        } else {
+            pdfRenderer.close()
+            fileDescriptor.close()
+            null
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
