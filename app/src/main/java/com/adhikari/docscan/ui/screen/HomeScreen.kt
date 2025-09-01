@@ -69,10 +69,12 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate(NavRoutes.Camera.route)
+                    navController.navigate(NavRoutes.DocumentScanner.route)
                 }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Scan Document")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Scan")
             }
         }
     ) { paddingValues ->
@@ -168,7 +170,7 @@ fun WelcomeCard() {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Scan documents, detect edges, and export to PDF with ease.",
+                text = "Use ML Kit Document Scanner for professional document detection, automatic cropping, and instant PDF generation.",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
@@ -177,7 +179,7 @@ fun WelcomeCard() {
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Tap the camera button to start scanning!",
+                text = "One-tap scanning with AI-powered edge detection and instant PDF creation!",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
@@ -335,46 +337,21 @@ fun NavigationOptionsCard(
             )
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
+            // Single Scan Button (ML Kit handles both camera and gallery)
+            Button(
+                onClick = { navController.navigate(NavRoutes.DocumentScanner.route) },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
-                // Scan from Camera
-                Button(
-                    onClick = { navController.navigate(NavRoutes.Camera.route) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.camera),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Camera")
-                }
-                
-                // Pick from Gallery
-                Button(
-                    onClick = { 
-                        // TODO: Implement gallery picker
-                        navController.navigate(NavRoutes.Crop.route)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.List,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Gallery")
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.camera),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Scan Document")
             }
             
             Spacer(modifier = Modifier.height(12.dp))

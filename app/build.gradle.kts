@@ -69,11 +69,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     
-    // CameraX
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
+    // CameraX - Removed (replaced by ML Kit Document Scanner)
     
     // ML Kit
     implementation(libs.mlkit.text.recognition)
@@ -94,6 +90,9 @@ dependencies {
     
     // iText for PDF generation
     implementation(libs.itext7.core)
+    
+    // GPUImage for image processing
+    implementation(libs.gpuimage)
     
     // Module dependencies
     implementation(project(":data"))

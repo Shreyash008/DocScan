@@ -18,6 +18,7 @@ coil = "2.5.0"
 itext = "8.0.2"
 navigation = "2.7.7"
 playServicesMlkitDocumentScanner = "16.0.0-beta1"
+gpuimage = "2.1.0"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -65,6 +66,7 @@ itext7-core = { group = "com.itextpdf", name = "itext7-core", version.ref = "ite
 # Navigation
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 play-services-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "playServicesMlkitDocumentScanner" }
+gpuimage = { group = "jp.co.cyberagent.android", name = "gpuimage", version.ref = "gpuimage" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
