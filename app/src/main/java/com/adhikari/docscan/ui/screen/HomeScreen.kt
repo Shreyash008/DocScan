@@ -65,17 +65,6 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate(NavRoutes.DocumentScanner.route)
-                }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Scan Document")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Scan")
-            }
         }
     ) { paddingValues ->
         LazyColumn(
@@ -358,9 +347,7 @@ fun NavigationOptionsCard(
             
             // View Saved Scans
             Button(
-                onClick = { 
-                    // TODO: Navigate to saved scans
-                },
+                onClick = { navController.navigate(NavRoutes.SavedScans.route) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary

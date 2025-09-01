@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import com.adhikari.docscan.navigation.NavRoutes
 import com.adhikari.docscan.ui.screen.DocumentScannerScreen
 import com.adhikari.docscan.ui.screen.HomeScreen
+import com.adhikari.docscan.ui.screen.SavedScansScreen
 import com.adhikari.docscan.ui.theme.DocScanTheme
 import com.adhikari.docscan.ui.viewmodel.ScanViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -44,6 +45,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(NavRoutes.DocumentScanner.route) {
                             DocumentScannerScreen(navController = navController)
+                        }
+                        composable(NavRoutes.SavedScans.route) {
+                            SavedScansScreen(navController = navController)
                         }
                     }
                 }
