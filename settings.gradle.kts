@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "DocScan"
 include(":app")
- 
+include(":data")
+include(":domain")
